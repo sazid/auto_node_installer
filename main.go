@@ -1,3 +1,6 @@
+// Author: Mohammed Sazid Al Rashid
+// GitHub: sazid
+
 package main
 
 import (
