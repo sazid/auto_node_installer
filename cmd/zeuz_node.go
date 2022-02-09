@@ -4,7 +4,6 @@
 package main
 
 import (
-	"archive/zip"
 	"embed"
 	"fmt"
 	"io"
@@ -15,13 +14,14 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
-	"strings"
+
+	"github.com/automationsolutionz/zeuz_node/internal/zeuz_node"
 )
 
 const (
 	pythonInstallerFilename = "python-3.8.10-amd64.exe"
 	payloadDir              = "payload"
-	activeZeuzNodeDir       = "zeuz_node-active"
+	activeZeuzNodeDir       = "zeuz_node_python"
 )
 
 var (
@@ -111,7 +111,6 @@ func installPython() {
 		"InstallAllUsers=0",
 		"Include_launcher=0",
 		"Include_test=0",
-		"Include_launcher=1",
 		"Include_pip=1",
 		"Include_tools=1",
 		"Include_exe=1",
@@ -145,7 +144,14 @@ func getZeuzNode() (zeuzNodeDir string) {
 
 	log.Println("downloading ZeuZ Node")
 
-	out, err := os.Create("zeuz_node_download.zip")
+	os.MkdirAll(payloadDir, os.ModeDir)
+
+	downloadPath := filepath.Join(payloadDir, "zeuz_node_download.zip")
+	os.Remove(downloadPath)
+	extractPath := filepath.Join(payloadDir, "Zeuz_Python_Node-beta")
+	os.RemoveAll(extractPath)
+
+	out, err := os.Create(downloadPath)
 	if err != nil {
 		log.Fatalf("failed to create output zip file for downloading zeuz node: %v", err)
 	}
@@ -160,9 +166,8 @@ func getZeuzNode() (zeuzNodeDir string) {
 		log.Fatalf("failed to download zeuz node: %v", err)
 	}
 
-	_, err = Unzip(out.Name(), fromCwd("."))
-	os.RemoveAll(activeZeuzNodeDir)
-	os.Rename("Zeuz_Python_Node-beta", activeZeuzNodeDir)
+	_, err = zeuz_node.Unzip(payloadDir, out.Name())
+	os.Rename(extractPath, zeuzNodeDir)
 	return
 }
 
@@ -196,62 +201,8 @@ func launchZeuzNode(pythonPath, zeuzNodePath, logDir string) {
 	}
 }
 
-// Unzip will decompress a zip archive, moving all files and folders
-// within the zip file (parameter 1) to an output directory (parameter 2).
-func Unzip(src, dest string) ([]string, error) {
-
-	var filenames []string
-
-	r, err := zip.OpenReader(src)
-	if err != nil {
-		return filenames, err
-	}
-	defer r.Close()
-
-	for _, f := range r.File {
-
-		// Store filename/path for returning and using later on
-		fpath := filepath.Join(dest, f.Name)
-
-		// Check for ZipSlip. More Info: http://bit.ly/2MsjAWE
-		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
-			return filenames, fmt.Errorf("%s: illegal file path", fpath)
-		}
-
-		filenames = append(filenames, fpath)
-
-		if f.FileInfo().IsDir() {
-			// Make Folder
-			os.MkdirAll(fpath, os.ModePerm)
-			continue
-		}
-
-		// Make File
-		if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-			return filenames, err
-		}
-
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			return filenames, err
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			return filenames, err
-		}
-
-		_, err = io.Copy(outFile, rc)
-
-		// Close the file without defer to close before next iteration of loop
-		outFile.Close()
-		rc.Close()
-
-		if err != nil {
-			return filenames, err
-		}
-	}
-	return filenames, nil
+func cleanupPayload() {
+	os.RemoveAll(payloadDir)
 }
 
 func main() {
@@ -271,6 +222,9 @@ func main() {
 	}
 	log.Printf("found python at: %v", pythonPath)
 	zeuzNodeDir := getZeuzNode()
+
+	cleanupPayload()
+
 	launchZeuzNode(pythonPath, zeuzNodeDir, logDir)
 
 	log.Println("done. Exiting")

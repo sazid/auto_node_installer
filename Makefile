@@ -1,2 +1,2 @@
 all:
-	go build -o bin/zeuz_node.exe main.go
+	go build -o bin/zeuz_node.exe cmd/zeuz_node.go
