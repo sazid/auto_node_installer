@@ -17,6 +17,22 @@ var (
 	customLocation *string = flag.String("location", "", "specify a custom location where zeuz node will store all its data")
 )
 
+// checkWriteable checks to see if the selected location is writable - if not,
+// we'll use the current working directory.
+func checkWriteable(homeDir string) string {
+	testDir := filepath.Join(homeDir, "zeuzwritetestdir")
+	err := os.Mkdir(testDir, os.ModeDir)
+	if err != nil {
+		homeDir, err = os.Getwd()
+		if err != nil {
+			log.Fatalf("failed to get current working directory: %v", err)
+		}
+	}
+	os.RemoveAll(testDir)
+
+	return homeDir
+}
+
 func main() {
 	log.Println("starting ZeuZ Node")
 
@@ -35,10 +51,12 @@ func main() {
 	} else {
 		err := os.MkdirAll(*customLocation, os.ModeDir)
 		if err != nil {
-			log.Fatalf("failed to create or locate custom location: %v", err)
+			log.Fatalf("failed to create zeuz dir at the specified custom location: %v", err)
 		}
 		homeDir = *customLocation
 	}
+
+	homeDir = checkWriteable(homeDir)
 
 	// ~/zeuz
 	zeuzRootDir := filepath.Join(homeDir, "zeuz")
@@ -52,6 +70,7 @@ func main() {
 	payloadDir := filepath.Join(zeuzRootDir, "payload")
 
 	// cleanup payloadDir after we're done as it contains transient data
+	// TODO: This is not working right now because of os.Exit(1)
 	defer os.RemoveAll(payloadDir)
 
 	// ~/zeuz/zeuz_node_logs
