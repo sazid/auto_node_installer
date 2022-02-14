@@ -4,6 +4,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,14 +13,31 @@ import (
 	"github.com/automationsolutionz/zeuz_node/internal/zeuz_node/python"
 )
 
+var (
+	customLocation *string = flag.String("location", "", "specify a custom location where zeuz node will store all its data")
+)
+
 func main() {
 	log.Println("starting ZeuZ Node")
 
+	flag.Parse()
+
 	// setup all the required paths
-	// ~/
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatalf("failed to get current user's home directory: %v", err)
+	homeDir := ""
+	log.Println(*customLocation)
+	if customLocation == nil || len(*customLocation) == 0 {
+		// ~/
+		var err error
+		homeDir, err = os.UserHomeDir()
+		if err != nil {
+			log.Fatalf("failed to get current user's home directory: %v", err)
+		}
+	} else {
+		err := os.MkdirAll(*customLocation, os.ModeDir)
+		if err != nil {
+			log.Fatalf("failed to create or locate custom location: %v", err)
+		}
+		homeDir = *customLocation
 	}
 
 	// ~/zeuz
