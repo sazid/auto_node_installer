@@ -25,19 +25,27 @@ func main() {
 	// ~/zeuz
 	zeuzRootDir := filepath.Join(homeDir, "zeuz")
 
+	// ~/zeuz/python
+	// default path where we automatically install python to.
+	defaultPythonInstallDir := filepath.Join(zeuzRootDir, "python")
+
 	// ~/zeuz/payload
-	// payloadDir holds the downloads and extract dir
+	// payloadDir holds the temporary downloads and extract dir
 	payloadDir := filepath.Join(zeuzRootDir, "payload")
+
+	// cleanup payloadDir after we're done as it contains transient data
+	defer os.RemoveAll(payloadDir)
 
 	// ~/zeuz/zeuz_node_logs
 	// logDir centralizes all zeuz node logs
 	logDir := filepath.Join(zeuzRootDir, "zeuz_node_logs")
 
-	// ~/zeuz/zeuz_python_node
+	// ~/zeuz/zeuz_node_python
 	nodeDir := filepath.Join(zeuzRootDir, "zeuz_node_python")
 
-	pythonPath, err := python.VerifyAndInstallPython(payloadDir)
+	pythonPath, err := python.VerifyAndInstallPython(payloadDir, defaultPythonInstallDir)
 	if err != nil {
+		defer os.Exit(1)
 		return
 	}
 	zeuz_node.VerifyAndLaunchZeuzNode(pythonPath, nodeDir, payloadDir, logDir)

@@ -9,22 +9,13 @@ import (
 	"path/filepath"
 )
 
-func fromCwd(name string) string {
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatalf("failed to get current working directory: %v", err)
-	}
-	return filepath.Join(cwd, name)
-}
-
 // getZeuzNode downloads and makes ZeuZ Node available in the current directory
 // if not already available. Right now, this will only check whether there's a
 // `zeuz_node` directory present in the current location.
 //
 // TODO: This should ideally check for a config file - which version of node to
 // download or use.
-func getZeuzNode(activeZeuzNodeDir, payloadDir string) (zeuzNodeDir string) {
-	zeuzNodeDir = fromCwd(activeZeuzNodeDir)
+func getZeuzNode(zeuzNodeDir, payloadDir string) {
 	_, err := os.Stat(zeuzNodeDir)
 	if err == nil {
 		log.Printf("found zeuz node at: %v", zeuzNodeDir)
@@ -56,8 +47,10 @@ func getZeuzNode(activeZeuzNodeDir, payloadDir string) (zeuzNodeDir string) {
 	}
 
 	_, err = Unzip(payloadDir, out.Name())
-	os.Rename(extractPath, zeuzNodeDir)
-	return
+	log.Printf("extract path: %v\nzeuz node dir: %v", extractPath, zeuzNodeDir)
+	if err = os.Rename(extractPath, zeuzNodeDir); err != nil {
+		log.Fatalf("failed to move zeuz node from `%v` to `%v` with error: %v", extractPath, zeuzNodeDir, err)
+	}
 }
 
 // launchZeuzNode launches `node_cli.py` with the log directory set to `qlogs` in
@@ -92,8 +85,7 @@ func launchZeuzNode(pythonPath, zeuzNodePath, logDir string) {
 
 // VerifyAndLaunchZeuzNode updates to latest zeuz node if not already available
 // on the local machine and then launches it.
-func VerifyAndLaunchZeuzNode(pythonPath, activeZeuzNodeDir, payloadDir, logDir string) {
-	zeuzNodeDir := getZeuzNode(activeZeuzNodeDir, payloadDir)
-
+func VerifyAndLaunchZeuzNode(pythonPath, zeuzNodeDir, payloadDir, logDir string) {
+	getZeuzNode(zeuzNodeDir, payloadDir)
 	launchZeuzNode(pythonPath, zeuzNodeDir, logDir)
 }
