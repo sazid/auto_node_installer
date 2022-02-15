@@ -12,15 +12,13 @@ func TestConvertVersionStringToInt(t *testing.T) {
 		{"v0.0.0", 0},
 		{"0.0.0", 0},
 		{"v0.0.1", 1},
-		{"v1.0.0", 100},
-		{"1.0", 10},
-		{"v1.0", 10},
-		{"1.2.3", 123},
-		{"v1.2.3", 123},
+		{"v1.0.0", 0},
+		{"1.2.3", 23},
+		{"v1.2.3", 23},
 	}
 
 	for _, c := range cases {
-		got := convertVersionToInt(c.versionStr)
+		_, got := ConvertVersionToInt(c.versionStr)
 		if got != c.want {
 			t.Fatalf("got: %d, want: %d", got, c.want)
 		}
@@ -40,6 +38,10 @@ func TestCompareVersions(t *testing.T) {
 		{"v0.0.0", "v0.0.0", 0},
 		{"0.0.1", "v0.0.2", 1},
 		{"0.0.2", "0.0.1", -1},
+		{"1.0.2", "2.0.0", 0},
+		{"1.0.2", "2.0.3", 0},
+		{"1.0.2", "1.3.5", 33},
+		{"1.2", "1", 0},
 	}
 
 	for _, c := range cases {

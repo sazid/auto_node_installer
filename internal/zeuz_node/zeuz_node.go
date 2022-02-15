@@ -1,6 +1,7 @@
 package zeuz_node
 
 import (
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
@@ -11,18 +12,24 @@ import (
 	"github.com/automationsolutionz/zeuz_node/internal/zeuz_node/config"
 )
 
+const (
+	githubReleasesEndpoint = "https://api.github.com/repos/automationsolutionz/zeuz_python_node/releases"
+)
+
 // getZeuzNode downloads and makes ZeuZ Node available in the current directory
 // if not already available. Right now, this will only check whether there's a
 // `zeuz_node` directory present in the current location.
 //
 // TODO: This should ideally check for a config file - which version of node to
 // download or use.
-func getZeuzNode(zeuzNodeDir, payloadDir, url string) {
+func getZeuzNode(zeuzNodeDir, payloadDir, url string, updateAvailable bool) {
 	_, err := os.Stat(zeuzNodeDir)
-	if err == nil {
+	if !updateAvailable && err == nil {
 		log.Printf("found zeuz node at: %v", zeuzNodeDir)
 		return
 	}
+
+	os.RemoveAll(zeuzNodeDir)
 
 	log.Println("downloading ZeuZ Node")
 
@@ -53,6 +60,7 @@ func getZeuzNode(zeuzNodeDir, payloadDir, url string) {
 	if err = os.Rename(extractPath, zeuzNodeDir); err != nil {
 		log.Fatalf("failed to move zeuz node from `%v` to `%v` with error: %v", extractPath, zeuzNodeDir, err)
 	}
+	os.Remove(downloadPath)
 }
 
 // launchZeuzNode launches `node_cli.py` with the log directory set to `qlogs` in
@@ -85,19 +93,78 @@ func launchZeuzNode(pythonPath, zeuzNodePath, logDir string) {
 	}
 }
 
-// isLatestInstalled returns whether we have the latest zeuz node installed by
+type githubRelease struct {
+	Name       string `json:"name"`
+	ZipballUrl string `json:"zipball_url"`
+}
+
+// fetchLatestVersionInfo returns whether we have the latest zeuz node installed by
 // inspecting a config file.
-func isLatestInstalled(conf config.Config) bool {
-	return false
+func fetchLatestVersionInfo(conf config.Config) (string, bool) {
+	log.Println("checking for new updates")
+
+	resp, err := http.Get(githubReleasesEndpoint)
+	if err != nil {
+		log.Printf("failed to get the latest releases from github: %v", err)
+		return "", false
+	}
+	defer resp.Body.Close()
+
+	var releases []githubRelease
+	err = json.NewDecoder(resp.Body).Decode(&releases)
+	if err != nil {
+		log.Printf("failed to get the latest releases from github: %v", err)
+		return "", false
+	}
+
+	if conf.CurrentVersion == config.FirstRunVersion {
+		for _, r := range releases {
+			curMajor, curMinorPatch := config.ConvertVersionToInt(conf.CurrentVersion)
+			rMajor, rMinorPatch := config.ConvertVersionToInt(r.Name)
+			if rMajor < curMajor || (rMajor == curMajor && (rMinorPatch < curMinorPatch)) {
+				continue
+			}
+			conf.CurrentVersion = r.Name
+		}
+	}
+
+	var gr *githubRelease
+	var largestVersion int
+	for _, r := range releases {
+		// take the most updated version
+		if largestVersion < conf.CompareVersion(r.Name) {
+			largestVersion = conf.CompareVersion(r.Name)
+			gr = &r
+		}
+	}
+
+	if gr != nil {
+		log.Printf(
+			"new update for ZeuZ Node is available. Current version: %v, Latest version: %v",
+			conf.CurrentVersion,
+			gr.Name,
+		)
+		return gr.ZipballUrl, true
+	}
+
+	log.Println("we're already running the latest version")
+	return "", false
 }
 
 // VerifyAndLaunchZeuzNode updates to latest zeuz node if not already available
 // on the local machine and then launches it.
 func VerifyAndLaunchZeuzNode(paths config.Paths, conf config.Config) {
+	zipUrl := "https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/beta.zip"
+	updateUrl, newUpdateAvailable := fetchLatestVersionInfo(conf)
+	if newUpdateAvailable {
+		zipUrl = updateUrl
+	}
+
 	getZeuzNode(
 		paths.ZeuzNodeDir,
 		paths.ZeuzPayloadDir,
-		"https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/beta.zip",
+		zipUrl,
+		newUpdateAvailable,
 	)
 	launchZeuzNode(paths.PythonPath, paths.ZeuzNodeDir, paths.ZeuzLogDir)
 }
