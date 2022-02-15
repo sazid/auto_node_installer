@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"log"
 	"os"
@@ -41,7 +42,6 @@ func main() {
 
 	// setup all the required paths
 	homeDir := ""
-	log.Println(*customLocation)
 	if customLocation == nil || len(*customLocation) == 0 {
 		// ~/
 		var err error
@@ -81,7 +81,7 @@ func main() {
 	// ~/zeuz/zeuz_node_python
 	nodeDir := filepath.Join(zeuzRootDir, "zeuz_node_python")
 
-	dirs := config.Paths{
+	paths := config.Paths{
 		HomeDir:                 homeDir,
 		WorkingDir:              zeuzRootDir,
 		ZeuzNodeDir:             nodeDir,
@@ -91,13 +91,28 @@ func main() {
 	}
 
 	var err error
-	dirs.PythonPath, err = python.VerifyAndInstallPython(dirs)
+	paths.PythonPath, err = python.VerifyAndInstallPython(paths)
 	if err != nil {
 		defer os.Exit(1)
 		return
 	}
 
-	zeuz_node.VerifyAndLaunchZeuzNode(dirs)
+	var conf config.Config
+	wdFs := os.DirFS(paths.WorkingDir)
+	confFile, err := wdFs.Open("config.json")
+	if err != nil {
+		log.Println("no previous config file found, using the default config.")
+		conf, err = config.NewConfig(bytes.NewBufferString(config.DefaultConfig))
+	} else {
+		defer confFile.Close()
+
+		conf, err = config.NewConfig(confFile)
+		if err != nil {
+			log.Fatalf("failed to read config file")
+		}
+	}
+
+	zeuz_node.VerifyAndLaunchZeuzNode(paths, conf)
 
 	log.Println("done. Exiting")
 }

@@ -93,7 +93,7 @@ func isLatestInstalled(conf config.Config) bool {
 
 // VerifyAndLaunchZeuzNode updates to latest zeuz node if not already available
 // on the local machine and then launches it.
-func VerifyAndLaunchZeuzNode(paths config.Paths) {
+func VerifyAndLaunchZeuzNode(paths config.Paths, conf config.Config) {
 	getZeuzNode(
 		paths.ZeuzNodeDir,
 		paths.ZeuzPayloadDir,
