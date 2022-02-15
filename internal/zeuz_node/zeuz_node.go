@@ -8,12 +8,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/automationsolutionz/zeuz_node/internal/zeuz_node/config"
 )
 
 const (
-	githubReleasesEndpoint = "https://api.github.com/repos/automationsolutionz/zeuz_python_node/releases"
+	betaGithubUrl          = "https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/beta.zip"
+	githubReleasesEndpoint = "https://api.github.com/repos/AutomationSolutionz/Zeuz_Python_Node/releases"
 )
 
 // getZeuzNode downloads and makes ZeuZ Node available in the current directory
@@ -37,8 +39,6 @@ func getZeuzNode(zeuzNodeDir, payloadDir, url string, updateAvailable bool) {
 
 	downloadPath := filepath.Join(payloadDir, "zeuz_node_download.zip")
 	os.Remove(downloadPath)
-	extractPath := filepath.Join(payloadDir, "Zeuz_Python_Node-beta")
-	os.RemoveAll(extractPath)
 
 	out, err := os.Create(downloadPath)
 	if err != nil {
@@ -56,6 +56,18 @@ func getZeuzNode(zeuzNodeDir, payloadDir, url string, updateAvailable bool) {
 	}
 
 	_, err = Unzip(payloadDir, out.Name())
+
+	// name of the dir inside the zip is of the form: username-repo_name-commit_hash
+	var extractPath string
+	dirEntries, err := os.ReadDir(payloadDir)
+	for _, ent := range dirEntries {
+		if strings.HasPrefix(ent.Name(), "AutomationSolutionz") {
+			extractPath = filepath.Join(payloadDir, ent.Name())
+			break
+		}
+	}
+	defer os.RemoveAll(extractPath)
+
 	log.Printf("extract path: %v\nzeuz node dir: %v", extractPath, zeuzNodeDir)
 	if err = os.Rename(extractPath, zeuzNodeDir); err != nil {
 		log.Fatalf("failed to move zeuz node from `%v` to `%v` with error: %v", extractPath, zeuzNodeDir, err)
@@ -100,7 +112,7 @@ type githubRelease struct {
 
 // fetchLatestVersionInfo returns whether we have the latest zeuz node installed by
 // inspecting a config file.
-func fetchLatestVersionInfo(conf config.Config) (string, bool) {
+func fetchLatestVersionInfo(paths config.Paths, conf config.Config) (string, bool) {
 	log.Println("checking for new updates")
 
 	resp, err := http.Get(githubReleasesEndpoint)
@@ -117,20 +129,29 @@ func fetchLatestVersionInfo(conf config.Config) (string, bool) {
 		return "", false
 	}
 
+	var gr *githubRelease
+
 	if conf.CurrentVersion == config.FirstRunVersion {
-		for _, r := range releases {
+		for i := 0; i < len(releases); i++ {
+			r := releases[i]
 			curMajor, curMinorPatch := config.ConvertVersionToInt(conf.CurrentVersion)
 			rMajor, rMinorPatch := config.ConvertVersionToInt(r.Name)
 			if rMajor < curMajor || (rMajor == curMajor && (rMinorPatch < curMinorPatch)) {
 				continue
 			}
 			conf.CurrentVersion = r.Name
+			gr = &r
 		}
+
+		// write to config file.
+		conf.WriteToFile(paths.ConfigPath)
+
+		return gr.ZipballUrl, true
 	}
 
-	var gr *githubRelease
 	var largestVersion int
-	for _, r := range releases {
+	for i := 0; i < len(releases); i++ {
+		r := releases[i]
 		// take the most updated version
 		if largestVersion < conf.CompareVersion(r.Name) {
 			largestVersion = conf.CompareVersion(r.Name)
@@ -144,6 +165,11 @@ func fetchLatestVersionInfo(conf config.Config) (string, bool) {
 			conf.CurrentVersion,
 			gr.Name,
 		)
+
+		// write to config file.
+		conf.CurrentVersion = gr.Name
+		conf.WriteToFile(paths.ConfigPath)
+
 		return gr.ZipballUrl, true
 	}
 
@@ -154,8 +180,8 @@ func fetchLatestVersionInfo(conf config.Config) (string, bool) {
 // VerifyAndLaunchZeuzNode updates to latest zeuz node if not already available
 // on the local machine and then launches it.
 func VerifyAndLaunchZeuzNode(paths config.Paths, conf config.Config) {
-	zipUrl := "https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/beta.zip"
-	updateUrl, newUpdateAvailable := fetchLatestVersionInfo(conf)
+	zipUrl := betaGithubUrl
+	updateUrl, newUpdateAvailable := fetchLatestVersionInfo(paths, conf)
 	if newUpdateAvailable {
 		zipUrl = updateUrl
 	}

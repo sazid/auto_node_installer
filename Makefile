@@ -7,6 +7,9 @@ all:
 	GOOS=darwin GOARCH=arm64 go build -o bin/zeuz_node-mac-apple-silicon cmd/zeuz_node.go
 	GOOS=windows GOARCH=arm64 go build -o bin/zeuz_node-windows-arm64.exe cmd/zeuz_node.go
 
+run:
+	go run cmd/zeuz_node.go
+
 test:
 	go test ./...
 

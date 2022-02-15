@@ -9,4 +9,5 @@ type Paths struct {
 	DefaultPythonInstallDir string
 
 	PythonPath string
+	ConfigPath string
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 )
 
 type Config struct {
@@ -71,6 +72,24 @@ func (c *Config) CompareVersion(otherVersion string) (result int) {
 		return 0
 	}
 	return other - cur
+}
+
+func (c *Config) WriteToFile(filepath string) {
+	// write to config file.
+	f, err := os.OpenFile(
+		filepath,
+		os.O_RDWR|os.O_CREATE|os.O_TRUNC,
+		0644,
+	)
+	if err != nil {
+		log.Fatalf("failed to open `%s` file for writing: %v", filepath, err)
+	}
+	defer f.Close()
+
+	err = json.NewEncoder(f).Encode(c)
+	if err != nil {
+		log.Fatalf("failed to write config file: %v", err)
+	}
 }
 
 var FirstRunVersion = "0.0.0"

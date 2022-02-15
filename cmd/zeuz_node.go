@@ -81,6 +81,8 @@ func main() {
 	// ~/zeuz/zeuz_node_python
 	nodeDir := filepath.Join(zeuzRootDir, "zeuz_node_python")
 
+	configPath := filepath.Join(zeuzRootDir, "config.json")
+
 	paths := config.Paths{
 		HomeDir:                 homeDir,
 		WorkingDir:              zeuzRootDir,
@@ -88,7 +90,10 @@ func main() {
 		ZeuzLogDir:              logDir,
 		ZeuzPayloadDir:          payloadDir,
 		DefaultPythonInstallDir: defaultPythonInstallDir,
+		ConfigPath:              configPath,
 	}
+
+	os.MkdirAll(paths.WorkingDir, os.ModePerm)
 
 	var err error
 	paths.PythonPath, err = python.VerifyAndInstallPython(paths)
@@ -98,15 +103,14 @@ func main() {
 	}
 
 	var conf config.Config
-	wdFs := os.DirFS(paths.WorkingDir)
-	confFile, err := wdFs.Open("config.json")
+	f, err := os.Open(paths.ConfigPath)
 	if err != nil {
 		log.Println("no previous config file found, using the default config.")
 		conf, err = config.NewConfig(bytes.NewBufferString(config.DefaultConfig))
 	} else {
-		defer confFile.Close()
+		defer f.Close()
 
-		conf, err = config.NewConfig(confFile)
+		conf, err = config.NewConfig(f)
 		if err != nil {
 			log.Fatalf("failed to read config file")
 		}
