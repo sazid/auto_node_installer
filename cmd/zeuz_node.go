@@ -81,25 +81,23 @@ func main() {
 	// ~/zeuz/zeuz_node_python
 	nodeDir := filepath.Join(zeuzRootDir, "zeuz_node_python")
 
-	conf := config.Config{
-		Dirs: config.Dirs{
-			HomeDir:                 homeDir,
-			ZeuzRootDir:             zeuzRootDir,
-			ZeuzNodeDir:             nodeDir,
-			ZeuzLogDir:              logDir,
-			ZeuzPayloadDir:          payloadDir,
-			DefaultPythonInstallDir: defaultPythonInstallDir,
-		},
+	dirs := config.Paths{
+		HomeDir:                 homeDir,
+		WorkingDir:              zeuzRootDir,
+		ZeuzNodeDir:             nodeDir,
+		ZeuzLogDir:              logDir,
+		ZeuzPayloadDir:          payloadDir,
+		DefaultPythonInstallDir: defaultPythonInstallDir,
 	}
 
-	log.Println(conf)
-
-	pythonPath, err := python.VerifyAndInstallPython(conf)
+	var err error
+	dirs.PythonPath, err = python.VerifyAndInstallPython(dirs)
 	if err != nil {
 		defer os.Exit(1)
 		return
 	}
-	zeuz_node.VerifyAndLaunchZeuzNode(pythonPath, conf)
+
+	zeuz_node.VerifyAndLaunchZeuzNode(dirs)
 
 	log.Println("done. Exiting")
 }

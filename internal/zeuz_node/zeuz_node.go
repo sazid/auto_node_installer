@@ -87,17 +87,17 @@ func launchZeuzNode(pythonPath, zeuzNodePath, logDir string) {
 
 // isLatestInstalled returns whether we have the latest zeuz node installed by
 // inspecting a config file.
-func isLatestInstalled() bool {
+func isLatestInstalled(conf config.Config) bool {
 	return false
 }
 
 // VerifyAndLaunchZeuzNode updates to latest zeuz node if not already available
 // on the local machine and then launches it.
-func VerifyAndLaunchZeuzNode(pythonPath string, conf config.Config) {
+func VerifyAndLaunchZeuzNode(paths config.Paths) {
 	getZeuzNode(
-		conf.Dirs.ZeuzNodeDir,
-		conf.Dirs.ZeuzPayloadDir,
+		paths.ZeuzNodeDir,
+		paths.ZeuzPayloadDir,
 		"https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/beta.zip",
 	)
-	launchZeuzNode(pythonPath, conf.Dirs.ZeuzNodeDir, conf.Dirs.ZeuzLogDir)
+	launchZeuzNode(paths.PythonPath, paths.ZeuzNodeDir, paths.ZeuzLogDir)
 }

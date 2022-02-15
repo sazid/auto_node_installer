@@ -1,14 +1,16 @@
 package config
 
 type Config struct {
-	Dirs Dirs
+	// lastUpdated *string `json:"last_updated,omitempty"`
 }
 
-type Dirs struct {
+type Paths struct {
 	HomeDir                 string
-	ZeuzRootDir             string
+	WorkingDir              string
 	ZeuzNodeDir             string
 	ZeuzLogDir              string
 	ZeuzPayloadDir          string
 	DefaultPythonInstallDir string
+
+	PythonPath string
 }

@@ -46,15 +46,15 @@ func isPythonInstalled(defaultPythonInstallDir string) (pythonPath string, found
 // VerifyAndInstallPython verifies whether a python installation is already
 // available, if not it'll auto install the Python (only for Windows). It
 // returns the path to the `python` executable.
-func VerifyAndInstallPython(conf config.Config) (string, error) {
-	pythonPath, found := isPythonInstalled(conf.Dirs.DefaultPythonInstallDir)
+func VerifyAndInstallPython(paths config.Paths) (string, error) {
+	pythonPath, found := isPythonInstalled(paths.DefaultPythonInstallDir)
 	if !found {
-		zeuz_node.ExtractFiles(embeddedFiles, conf.Dirs.ZeuzPayloadDir)
+		zeuz_node.ExtractFiles(embeddedFiles, paths.ZeuzPayloadDir)
 
-		pythonInstallerPath := filepath.Join(conf.Dirs.ZeuzPayloadDir, pythonInstallerFilename)
-		installPython(pythonInstallerPath, conf.Dirs.DefaultPythonInstallDir)
+		pythonInstallerPath := filepath.Join(paths.ZeuzPayloadDir, pythonInstallerFilename)
+		installPython(pythonInstallerPath, paths.DefaultPythonInstallDir)
 
-		pythonPath, found = isPythonInstalled(conf.Dirs.DefaultPythonInstallDir)
+		pythonPath, found = isPythonInstalled(paths.DefaultPythonInstallDir)
 		if !found {
 			log.Println("failed to find python in PATH or PATHEXT after installing python")
 			return "", ErrPythonNotFound
