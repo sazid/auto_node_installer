@@ -35,7 +35,7 @@ func extractTo(embeddedFiles embed.FS, destDir string, dirEntry fs.DirEntry) {
 func ExtractFiles(embeddedFiles embed.FS, payloadDir string) {
 	dir := payloadDir
 
-	err := os.MkdirAll(dir, os.ModeDir)
+	err := os.MkdirAll(dir, os.ModePerm)
 	if err != nil {
 		log.Fatalf("failed to create `%s` directory to extract required files", dir)
 	}

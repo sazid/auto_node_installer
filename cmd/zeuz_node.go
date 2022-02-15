@@ -21,7 +21,7 @@ var (
 // we'll use the current working directory.
 func checkWriteable(homeDir string) string {
 	testDir := filepath.Join(homeDir, "zeuzwritetestdir")
-	err := os.Mkdir(testDir, os.ModeDir)
+	err := os.Mkdir(testDir, os.ModePerm)
 	if err != nil {
 		homeDir, err = os.Getwd()
 		if err != nil {
@@ -49,7 +49,7 @@ func main() {
 			log.Fatalf("failed to get current user's home directory: %v", err)
 		}
 	} else {
-		err := os.MkdirAll(*customLocation, os.ModeDir)
+		err := os.MkdirAll(*customLocation, os.ModePerm)
 		if err != nil {
 			log.Fatalf("failed to create zeuz dir at the specified custom location: %v", err)
 		}

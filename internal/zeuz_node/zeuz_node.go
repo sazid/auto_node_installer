@@ -24,7 +24,7 @@ func getZeuzNode(zeuzNodeDir, payloadDir string) {
 
 	log.Println("downloading ZeuZ Node")
 
-	os.MkdirAll(payloadDir, os.ModeDir)
+	os.MkdirAll(payloadDir, os.ModePerm)
 
 	downloadPath := filepath.Join(payloadDir, "zeuz_node_download.zip")
 	os.Remove(downloadPath)
@@ -58,7 +58,7 @@ func getZeuzNode(zeuzNodeDir, payloadDir string) {
 func launchZeuzNode(pythonPath, zeuzNodePath, logDir string) {
 	nodeCliPath := filepath.Join(zeuzNodePath, "node_cli.py")
 
-	err := os.MkdirAll(logDir, os.ModeDir)
+	err := os.MkdirAll(logDir, os.ModePerm)
 	if err != nil {
 		log.Fatalf("failed to create log directory: %v", err)
 	}
