@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/automationsolutionz/zeuz_node/internal/zeuz_node"
+	"github.com/automationsolutionz/zeuz_node/internal/zeuz_node/config"
 )
 
 const (
@@ -45,15 +46,15 @@ func isPythonInstalled(defaultPythonInstallDir string) (pythonPath string, found
 // VerifyAndInstallPython verifies whether a python installation is already
 // available, if not it'll auto install the Python (only for Windows). It
 // returns the path to the `python` executable.
-func VerifyAndInstallPython(payloadDir, defaultPythonInstallDir string) (string, error) {
-	pythonPath, found := isPythonInstalled(defaultPythonInstallDir)
+func VerifyAndInstallPython(conf config.Config) (string, error) {
+	pythonPath, found := isPythonInstalled(conf.Dirs.DefaultPythonInstallDir)
 	if !found {
-		zeuz_node.ExtractFiles(embeddedFiles, payloadDir)
+		zeuz_node.ExtractFiles(embeddedFiles, conf.Dirs.ZeuzPayloadDir)
 
-		pythonInstallerPath := filepath.Join(payloadDir, pythonInstallerFilename)
-		installPython(pythonInstallerPath, defaultPythonInstallDir)
+		pythonInstallerPath := filepath.Join(conf.Dirs.ZeuzPayloadDir, pythonInstallerFilename)
+		installPython(pythonInstallerPath, conf.Dirs.DefaultPythonInstallDir)
 
-		pythonPath, found = isPythonInstalled(defaultPythonInstallDir)
+		pythonPath, found = isPythonInstalled(conf.Dirs.DefaultPythonInstallDir)
 		if !found {
 			log.Println("failed to find python in PATH or PATHEXT after installing python")
 			return "", ErrPythonNotFound

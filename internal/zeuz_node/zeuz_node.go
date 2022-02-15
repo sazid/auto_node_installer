@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/automationsolutionz/zeuz_node/internal/zeuz_node/config"
 )
 
 // getZeuzNode downloads and makes ZeuZ Node available in the current directory
@@ -15,7 +17,7 @@ import (
 //
 // TODO: This should ideally check for a config file - which version of node to
 // download or use.
-func getZeuzNode(zeuzNodeDir, payloadDir string) {
+func getZeuzNode(zeuzNodeDir, payloadDir, url string) {
 	_, err := os.Stat(zeuzNodeDir)
 	if err == nil {
 		log.Printf("found zeuz node at: %v", zeuzNodeDir)
@@ -36,7 +38,7 @@ func getZeuzNode(zeuzNodeDir, payloadDir string) {
 		log.Fatalf("failed to create output zip file for downloading zeuz node: %v", err)
 	}
 	defer out.Close()
-	resp, err := http.Get("https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/beta.zip")
+	resp, err := http.Get(url)
 	if err != nil {
 		log.Fatalf("failed to connect to internet to download zeuz node: %v", err)
 	}
@@ -83,9 +85,19 @@ func launchZeuzNode(pythonPath, zeuzNodePath, logDir string) {
 	}
 }
 
+// isLatestInstalled returns whether we have the latest zeuz node installed by
+// inspecting a config file.
+func isLatestInstalled() bool {
+	return false
+}
+
 // VerifyAndLaunchZeuzNode updates to latest zeuz node if not already available
 // on the local machine and then launches it.
-func VerifyAndLaunchZeuzNode(pythonPath, zeuzNodeDir, payloadDir, logDir string) {
-	getZeuzNode(zeuzNodeDir, payloadDir)
-	launchZeuzNode(pythonPath, zeuzNodeDir, logDir)
+func VerifyAndLaunchZeuzNode(pythonPath string, conf config.Config) {
+	getZeuzNode(
+		conf.Dirs.ZeuzNodeDir,
+		conf.Dirs.ZeuzPayloadDir,
+		"https://github.com/AutomationSolutionz/Zeuz_Python_Node/archive/refs/heads/beta.zip",
+	)
+	launchZeuzNode(pythonPath, conf.Dirs.ZeuzNodeDir, conf.Dirs.ZeuzLogDir)
 }
