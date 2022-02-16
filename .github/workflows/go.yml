@@ -27,5 +27,5 @@ jobs:
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v2.3.1
       with:
-        name: Binaries/Executables
+        name: binaries
         path: ./bin/*
