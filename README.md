@@ -1,5 +1,7 @@
 # ZeuZ Node
 
+[![Go](https://github.com/sazid/zeuz_node/actions/workflows/go.yml/badge.svg)](https://github.com/sazid/zeuz_node/actions/workflows/go.yml)
+
 ZeuZ Node is a software automation tool written in Python. The aim of this
 project is to produce a self contained exe/binary file that you can run and
 forget - it'll take care of all the menial tasks for you (see below).
