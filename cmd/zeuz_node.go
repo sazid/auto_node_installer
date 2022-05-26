@@ -8,7 +8,9 @@ import (
 	"flag"
 	"log"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/automationsolutionz/zeuz_node/internal/zeuz_node"
 	"github.com/automationsolutionz/zeuz_node/internal/zeuz_node/config"
@@ -35,7 +37,20 @@ func checkWriteable(homeDir string) string {
 	return homeDir
 }
 
+func handleSignals() {
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-sigs
+		log.Println("SIGTERM or SIGINT received, exiting...")
+		os.Exit(0)
+	}()
+}
+
 func main() {
+	handleSignals()
+
 	log.Println("starting ZeuZ Node")
 
 	flag.Parse()
