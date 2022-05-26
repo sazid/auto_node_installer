@@ -2,6 +2,7 @@ package zeuz_node
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/automationsolutionz/zeuz_node/internal/zeuz_node/config"
+	"golang.org/x/mod/semver"
 )
 
 const (
@@ -129,14 +131,26 @@ func fetchLatestVersionInfo(paths config.Paths, conf config.Config) (string, boo
 		return "", false
 	}
 
+	// Add 'v' prefix if not present, e.g 'v1.2.3'
+	for i := 0; i < len(releases); i++ {
+		if len(releases[i].Name) > 0 && releases[i].Name[0] != 'v' {
+			releases[i].Name = fmt.Sprintf("v%s", releases[i].Name)
+		} else {
+			continue
+		}
+	}
+
 	var gr *githubRelease
 
+	// If we've never downloaded zeuz node before, we'll fetch the latest
+	// version and download it.
 	if conf.CurrentVersion == config.FirstRunVersion {
 		for i := 0; i < len(releases); i++ {
 			r := releases[i]
-			curMajor, curMinorPatch := config.ConvertVersionToInt(conf.CurrentVersion)
-			rMajor, rMinorPatch := config.ConvertVersionToInt(r.Name)
-			if rMajor < curMajor || (rMajor == curMajor && (rMinorPatch < curMinorPatch)) {
+
+			// If release version is less or equal to the one locally present,
+			// we skip, otherwise we store it as the new version.
+			if semver.Compare(r.Name, conf.CurrentVersion) <= 0 {
 				continue
 			}
 			conf.CurrentVersion = r.Name
@@ -149,12 +163,11 @@ func fetchLatestVersionInfo(paths config.Paths, conf config.Config) (string, boo
 		return gr.ZipballUrl, true
 	}
 
-	var largestVersion int
+	largestVersion := conf.CurrentVersion
 	for i := 0; i < len(releases); i++ {
 		r := releases[i]
-		// take the most updated version
-		if largestVersion < conf.CompareVersion(r.Name) {
-			largestVersion = conf.CompareVersion(r.Name)
+		if semver.Compare(largestVersion, r.Name) < 0 {
+			largestVersion = r.Name
 			gr = &r
 		}
 	}
