@@ -42,8 +42,7 @@ func handleSignals() {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		<-sigs
-		log.Println("SIGTERM or SIGINT received, exiting...")
+		log.Printf("%s received, exiting...", <-sigs)
 		os.Exit(0)
 	}()
 }
